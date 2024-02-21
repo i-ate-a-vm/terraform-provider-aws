@@ -176,6 +176,30 @@ func resourceDomain() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"suggester": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"name": {
+							Type:     schema.TypeString,
+							Required: true,
+							ValidateFunc: validateSuggesterName,
+						},
+						"fuzzy_matching":{
+							Type:         schema.TypeString,
+							Optional:     true,
+						},
+						"sort_expression":{},
+						"source_fields": {
+							Type:         schema.TypeString,
+							Required:     true,
+							ValidateFunc: validation.StringMatch(regexache.MustCompile(`^[a-z]([0-9a-z-]){0,63}$`), "Index fields must start with a lowercase letter (a-z) and be at least 1 and no more than 64 lower-case letters"),
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -491,6 +515,17 @@ func validateIndexName(v interface{}, k string) (ws []string, es []error) {
 
 	if value == "score" {
 		es = append(es, fmt.Errorf("'score' is a reserved field name and cannot be used"))
+	}
+
+	return
+}
+
+func validateSuggesterName(v interface{}, k string) (ws []string, es []error) {
+	value := v.(string)
+
+	if !regexache.MustCompile(`^(\*?[a-z][0-9a-z_]{2,63}|[a-z][0-9a-z_]{0,63}\*?)$`).MatchString(value) {
+		es = append(es, fmt.Errorf(
+			"%q must begin with a letter and be at least 1 and no more than 64 characters long", k))
 	}
 
 	return
